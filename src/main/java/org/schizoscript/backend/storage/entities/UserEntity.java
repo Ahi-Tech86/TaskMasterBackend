@@ -2,6 +2,10 @@ package org.schizoscript.backend.storage.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.schizoscript.backend.storage.enums.GlobalRole;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -16,15 +20,17 @@ public class UserEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @Column(length = 50, nullable = false)
     private String firstName;
 
-//    @Column(length = 50, nullable = false)
     private String lastName;
 
-//    @Column(unique = true, length = 50, nullable = false)
+    @Column(unique = true)
     private String login;
 
-//    @Column(nullable = false)
     private String password;
+
+    @Enumerated(EnumType.STRING)
+    @ElementCollection(targetClass = GlobalRole.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "users_role", joinColumns = @JoinColumn(name = "user_id"))
+    private Set<GlobalRole> roles = new HashSet<>();
 }

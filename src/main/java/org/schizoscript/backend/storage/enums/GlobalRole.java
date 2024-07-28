@@ -1,7 +1,6 @@
 package org.schizoscript.backend.storage.enums;
 
-public enum Role {
+public enum GlobalRole {
     ADMIN_ROLE,
-    MANAGER_ROLE,
     USER_ROLE
 }

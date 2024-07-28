@@ -8,6 +8,7 @@ import org.schizoscript.backend.exceptions.AppException;
 import org.schizoscript.backend.factories.UserDtoFactory;
 import org.schizoscript.backend.factories.UserEntityFactory;
 import org.schizoscript.backend.storage.entities.UserEntity;
+import org.schizoscript.backend.storage.enums.GlobalRole;
 import org.schizoscript.backend.storage.repositories.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
