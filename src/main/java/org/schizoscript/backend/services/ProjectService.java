@@ -54,7 +54,12 @@ public class ProjectService {
 
     public ProjectDto editProject(ProjectModificationRequest projectModificationRequest, Long userId, Long projectId) {
 
-        ProjectDto projectDtoResponse = ProjectDto.builder().build();
+        Optional<ProjectUsersRolesEntity> optionalProjectUsersRolesEntity = projectUsersRoleRepository.findByUserId(userId);
+        String userRole = optionalProjectUsersRolesEntity.get().getProjectRole().toString();
+
+        if (!userRole.equals("PROJECT_MANAGER_ROLE")) {
+            throw new AppException("You don't have permission to access this action", HttpStatus.FORBIDDEN);
+        }
 
         if (projectModificationRequest.getName() != null && projectModificationRequest.getDescription() != null) {
             Optional<ProjectEntity> optionalProject = projectRepository.findByName(projectModificationRequest.getName());
@@ -73,13 +78,30 @@ public class ProjectService {
 
         } else if (projectModificationRequest.getName() != null) {
 
+            Optional<ProjectEntity> optionalProject = projectRepository.findByName(projectModificationRequest.getName());
+
+            if (optionalProject.isPresent()) {
+                throw new AppException("You can't rename this project because project with this name already exists", HttpStatus.BAD_REQUEST);
+            }
+
+            ProjectEntity project = projectRepository.findById(projectId).get();
+            project.setName(projectModificationRequest.getName());
+
+            ProjectEntity savedProject = projectRepository.save(project);
+
+            return projectDtoFactory.makeProjectDto(savedProject);
 
         } else if (projectModificationRequest.getDescription() != null) {
+
+            ProjectEntity project = projectRepository.findById(projectId).get();
+            project.setDescription(projectModificationRequest.getDescription());
+
+            ProjectEntity savedProject = projectRepository.save(project);
+
+            return projectDtoFactory.makeProjectDto(savedProject);
 
         } else {
             throw new AppException("Bad request", HttpStatus.BAD_REQUEST);
         }
-
-        return projectDtoResponse;
     }
 }
