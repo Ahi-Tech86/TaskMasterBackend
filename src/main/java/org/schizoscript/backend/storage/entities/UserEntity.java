@@ -31,6 +31,6 @@ public class UserEntity {
 
     @Enumerated(EnumType.STRING)
     @ElementCollection(targetClass = GlobalRole.class, fetch = FetchType.EAGER)
-    @CollectionTable(name = "users_role", joinColumns = @JoinColumn(name = "user_id"))
+    @CollectionTable(name = "application_users_roles", joinColumns = @JoinColumn(name = "user_id"))
     private Set<GlobalRole> roles = new HashSet<>();
 }

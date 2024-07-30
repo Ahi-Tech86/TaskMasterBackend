@@ -2,13 +2,12 @@ package org.schizoscript.backend.services;
 
 import lombok.RequiredArgsConstructor;
 import org.schizoscript.backend.dtos.CredentialsDto;
-import org.schizoscript.backend.dtos.SignUpDto;
+import org.schizoscript.backend.dtos.SingUpRequestDto;
 import org.schizoscript.backend.dtos.UserDto;
 import org.schizoscript.backend.exceptions.AppException;
 import org.schizoscript.backend.factories.UserDtoFactory;
 import org.schizoscript.backend.factories.UserEntityFactory;
 import org.schizoscript.backend.storage.entities.UserEntity;
-import org.schizoscript.backend.storage.enums.GlobalRole;
 import org.schizoscript.backend.storage.repositories.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,15 +35,15 @@ public class UserService {
         throw new AppException("Invalid password", HttpStatus.BAD_REQUEST);
     }
 
-    public UserDto register(SignUpDto signUpDto) {
-        Optional<UserEntity> optionalUser = userRepository.findByLogin(signUpDto.getLogin());
+    public UserDto register(SingUpRequestDto singUpRequestDto) {
+        Optional<UserEntity> optionalUser = userRepository.findByLogin(singUpRequestDto.getLogin());
 
         if (optionalUser.isPresent()) {
             throw new AppException("Login already exists", HttpStatus.BAD_REQUEST);
         }
 
-        UserEntity user = userEntityFactory.makeUserEntity(signUpDto);
-        user.setPassword(passwordEncoder.encode(signUpDto.getPassword()));
+        UserEntity user = userEntityFactory.makeUserEntity(singUpRequestDto);
+        user.setPassword(passwordEncoder.encode(singUpRequestDto.getPassword()));
 
         UserEntity savedUser = userRepository.save(user);
 

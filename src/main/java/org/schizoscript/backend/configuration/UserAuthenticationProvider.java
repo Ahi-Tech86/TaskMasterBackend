@@ -1,5 +1,9 @@
 package org.schizoscript.backend.configuration;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -34,28 +38,25 @@ public class UserAuthenticationProvider {
     }
 
     public String createToken(String login) {
-        long now = System.currentTimeMillis();
+        Date now = new Date();
         final long tokenExpirationInHours = 24L;
+        Algorithm algorithm = Algorithm.HMAC256(secretKey);
 
-        return Jwts
-                .builder()
-                .setSubject(login)
-                .setIssuedAt(new Date(now))
-                .setExpiration(new Date(now + 1000 * 60 * 60 * tokenExpirationInHours))
-                .signWith(getSignInKey(), SignatureAlgorithm.HS256)
-                .compact();
+        return JWT.create()
+                .withSubject(login)
+                .withIssuedAt(now)
+                .withExpiresAt(new Date(now.getTime() + tokenExpirationInHours * 60 * 60 * 1000))
+                .sign(algorithm);
     }
 
-    public Authentication tokenIsValid(String token) {
-        Claims claims = Jwts.parser()
-                .setSigningKey(secretKey.getBytes())
-                .build()
-                .parseClaimsJwt(token)
-                .getBody();
+    public Authentication validateToken(String token) {
+        Algorithm algorithm = Algorithm.HMAC256(secretKey);
+        JWTVerifier verifier = JWT.require(algorithm).build();
+        DecodedJWT decodedJWT = verifier.verify(token);
 
-        UserDto userDto = userService.findByLogin(claims.getSubject());
+        UserDto user = userService.findByLogin(decodedJWT.getSubject());
 
-        return new UsernamePasswordAuthenticationToken(userDto, null, Collections.emptyList());
+        return new UsernamePasswordAuthenticationToken(user, null, Collections.emptyList());
     }
 
     private Key getSignInKey() {
