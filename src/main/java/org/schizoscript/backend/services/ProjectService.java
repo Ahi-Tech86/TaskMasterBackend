@@ -23,6 +23,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ProjectService {
 
+    private final String MANAGER_ROLE = "PROJECT_MANAGER_ROLE";
+
     private final ProjectRepository projectRepository;
     private final ProjectDtoFactory projectDtoFactory;
     private final ProjectEntityFactory projectEntityFactory;
@@ -54,53 +56,56 @@ public class ProjectService {
 
     public ProjectDto editProject(ProjectModificationRequest projectModificationRequest, Long userId, Long projectId) {
 
-        Optional<ProjectUsersRolesEntity> optionalProjectUsersRolesEntity = projectUsersRoleRepository.findByUserId(userId);
-        String userRole = optionalProjectUsersRolesEntity.get().getProjectRole().toString();
+        checkingUserOnRolePrivileges(userId, MANAGER_ROLE);
 
-        if (!userRole.equals("PROJECT_MANAGER_ROLE")) {
-            throw new AppException("You don't have permission to access this action", HttpStatus.FORBIDDEN);
+        validateProjectModificationRequest(projectModificationRequest);
+
+        ProjectEntity project = projectRepository.findById(projectId).orElseThrow(
+                () -> new AppException("Project not found", HttpStatus.NOT_FOUND)
+        );
+
+        if (projectModificationRequest.getName() != null) {
+            checkProjectNameUniqueness(projectModificationRequest.getName());
+            project.setName(projectModificationRequest.getName());
         }
 
-        if (projectModificationRequest.getName() != null && projectModificationRequest.getDescription() != null) {
-            Optional<ProjectEntity> optionalProject = projectRepository.findByName(projectModificationRequest.getName());
-
-            if (optionalProject.isPresent()) {
-                throw new AppException("You can't rename this project because project with this name already exists", HttpStatus.BAD_REQUEST);
-            }
-
-            ProjectEntity project = projectRepository.findById(projectId).get();
-            project.setName(projectModificationRequest.getName());
+        if (projectModificationRequest.getDescription() != null) {
             project.setDescription(projectModificationRequest.getDescription());
+        }
 
-            ProjectEntity savedProject = projectRepository.save(project);
+        ProjectEntity savedProject = projectRepository.save(project);
 
-            return projectDtoFactory.makeProjectDto(savedProject);
+        return projectDtoFactory.makeProjectDto(savedProject);
+    }
 
-        } else if (projectModificationRequest.getName() != null) {
+    public void deleteProject(Long userId, Long projectId) {
 
-            Optional<ProjectEntity> optionalProject = projectRepository.findByName(projectModificationRequest.getName());
+        checkingUserOnRolePrivileges(userId, MANAGER_ROLE);
+    }
 
-            if (optionalProject.isPresent()) {
-                throw new AppException("You can't rename this project because project with this name already exists", HttpStatus.BAD_REQUEST);
-            }
+    private void checkProjectNameUniqueness(String projectName) {
+        Optional<ProjectEntity> optionalProject = projectRepository.findByName(projectName);
+        if (optionalProject.isPresent()) {
+            throw new AppException(
+                    "You can't rename this project because project with this name already exists", HttpStatus.BAD_REQUEST
+            );
+        }
+    }
 
-            ProjectEntity project = projectRepository.findById(projectId).get();
-            project.setName(projectModificationRequest.getName());
+    private void checkingUserOnRolePrivileges(Long userId, String roleName) {
+        Optional<ProjectUsersRolesEntity> optionalProjectUsersRolesEntity = projectUsersRoleRepository.findByUserId(userId);
+        ProjectUsersRolesEntity projectUsersRolesEntity = optionalProjectUsersRolesEntity.orElseThrow(
+                () -> new AppException("You don't have permission to access this action", HttpStatus.FORBIDDEN)
+        );
 
-            ProjectEntity savedProject = projectRepository.save(project);
+        String userRole = projectUsersRolesEntity.getProjectRole().toString();
+        if (!userRole.equals(roleName)) {
+            throw new AppException("You don't have permission to access this action", HttpStatus.FORBIDDEN);
+        }
+    }
 
-            return projectDtoFactory.makeProjectDto(savedProject);
-
-        } else if (projectModificationRequest.getDescription() != null) {
-
-            ProjectEntity project = projectRepository.findById(projectId).get();
-            project.setDescription(projectModificationRequest.getDescription());
-
-            ProjectEntity savedProject = projectRepository.save(project);
-
-            return projectDtoFactory.makeProjectDto(savedProject);
-
-        } else {
+    private void validateProjectModificationRequest(ProjectModificationRequest request) {
+        if (request.getName() == null && request.getDescription() == null) {
             throw new AppException("Bad request", HttpStatus.BAD_REQUEST);
         }
     }

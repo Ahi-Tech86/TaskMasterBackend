@@ -27,4 +27,9 @@ public class ProjectController {
     ) {
         return ResponseEntity.ok(projectService.editProject(projectModificationRequest, userId, projectId));
     }
+
+//    @DeleteMapping("/{userId}/project/{projectId}/delete")
+//    public ResponseEntity<ProjectDto> deleteProject(@PathVariable Long userId, @PathVariable Long projectId) {
+//        return ResponseEntity.ok(projectService.deleteProject(userId, projectId));
+//    }
 }
