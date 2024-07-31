@@ -25,4 +25,8 @@ public class ProjectUsersRelationEntity {
 
     @Column(name = "user_id")
     private Long userId;
+
+    @Column(name = "roles")
+    @Enumerated(EnumType.STRING)
+    private ProjectRole projectRole;
 }

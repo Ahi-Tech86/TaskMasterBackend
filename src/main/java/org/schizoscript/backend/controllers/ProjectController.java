@@ -1,6 +1,7 @@
 package org.schizoscript.backend.controllers;
 
 import lombok.RequiredArgsConstructor;
+import org.schizoscript.backend.dtos.DeleteResponseDto;
 import org.schizoscript.backend.dtos.ProjectModificationRequest;
 import org.schizoscript.backend.dtos.ProjectDto;
 import org.schizoscript.backend.services.ProjectService;
@@ -28,8 +29,8 @@ public class ProjectController {
         return ResponseEntity.ok(projectService.editProject(projectModificationRequest, userId, projectId));
     }
 
-//    @DeleteMapping("/{userId}/project/{projectId}/delete")
-//    public ResponseEntity<ProjectDto> deleteProject(@PathVariable Long userId, @PathVariable Long projectId) {
-//        return ResponseEntity.ok(projectService.deleteProject(userId, projectId));
-//    }
+    @DeleteMapping("/{userId}/project/{projectId}/delete")
+    public ResponseEntity<DeleteResponseDto> deleteProject(@PathVariable Long userId, @PathVariable Long projectId) {
+        return ResponseEntity.ok(projectService.deleteProject(userId, projectId));
+    }
 }

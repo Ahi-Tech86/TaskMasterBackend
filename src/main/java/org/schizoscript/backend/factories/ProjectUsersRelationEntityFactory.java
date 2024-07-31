@@ -5,9 +5,6 @@ import org.schizoscript.backend.storage.entities.ProjectUsersRelationEntity;
 import org.schizoscript.backend.storage.enums.ProjectRole;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Component
 public class ProjectUsersRelationEntityFactory {
 
@@ -17,6 +14,7 @@ public class ProjectUsersRelationEntityFactory {
                 .builder()
                 .projectId(projectDto.getId())
                 .userId(userId)
+                .projectRole(ProjectRole.PROJECT_MANAGER_ROLE)
                 .build();
     }
 }

@@ -2,7 +2,7 @@ package org.schizoscript.backend.storage.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.schizoscript.backend.storage.enums.GlobalRole;
+import org.schizoscript.backend.storage.enums.ApplicationRole;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -30,7 +30,7 @@ public class UserEntity {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @ElementCollection(targetClass = GlobalRole.class, fetch = FetchType.EAGER)
+    @ElementCollection(targetClass = ApplicationRole.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "application_users_roles", joinColumns = @JoinColumn(name = "user_id"))
-    private Set<GlobalRole> roles = new HashSet<>();
+    private Set<ApplicationRole> roles = new HashSet<>();
 }
