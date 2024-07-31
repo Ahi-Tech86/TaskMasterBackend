@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Setter
@@ -27,4 +29,7 @@ public class ProjectEntity {
     private Long ownerUserId;
 
     private Instant createAt;
+
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProjectUsersRelationEntity> projectUsersRelations = new ArrayList<>();
 }

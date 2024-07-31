@@ -20,10 +20,13 @@ public class ProjectUsersRolesEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id")
-    private Long userId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @Column(name = "project_user_id")
+    private ProjectUsersRelationEntity projectUsersRelation;
 
     @Column(name = "roles")
     @Enumerated(EnumType.STRING)
     private ProjectRole projectRole;
+
+
 }

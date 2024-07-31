@@ -25,4 +25,7 @@ public class ProjectUsersRelationEntity {
 
     @Column(name = "user_id")
     private Long userId;
+
+    @OneToOne(mappedBy = "projectUsers", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private ProjectUsersRolesEntity projectUsersRoles;
 }
