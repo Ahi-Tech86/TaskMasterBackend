@@ -21,12 +21,10 @@ public class ProjectUsersRolesEntity {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @Column(name = "project_user_id")
+    @JoinColumn(name = "project_user_id")
     private ProjectUsersRelationEntity projectUsersRelation;
 
     @Column(name = "roles")
     @Enumerated(EnumType.STRING)
     private ProjectRole projectRole;
-
-
 }

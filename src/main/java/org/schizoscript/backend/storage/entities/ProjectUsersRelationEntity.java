@@ -20,12 +20,13 @@ public class ProjectUsersRelationEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "project_id")
-    private Long projectId;
+    @JoinColumn(name = "project_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    private ProjectEntity project;
 
     @Column(name = "user_id")
     private Long userId;
 
-    @OneToOne(mappedBy = "projectUsers", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "projectUsersRelation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private ProjectUsersRolesEntity projectUsersRoles;
 }
