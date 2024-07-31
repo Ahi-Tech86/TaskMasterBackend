@@ -76,6 +76,7 @@ public class ProjectService {
         ProjectEntity deletedProject = checkProjectExistsByProjectId(projectId);
 
         projectRepository.deleteById(projectId);
+        projectUsersRelationRepository.deleteAllItemsByProjectId(projectId);
 
         return DeleteResponseDto
                 .builder()
