@@ -13,6 +13,7 @@ import org.schizoscript.backend.factories.ProjectMemberFactory;
 import org.schizoscript.backend.storage.entities.ProjectEntity;
 import org.schizoscript.backend.storage.entities.ProjectMemberEntity;
 import org.schizoscript.backend.storage.entities.UserEntity;
+import org.schizoscript.backend.storage.enums.ProjectRole;
 import org.schizoscript.backend.storage.repositories.ProjectRepository;
 import org.schizoscript.backend.storage.repositories.ProjectMemberRepository;
 import org.schizoscript.backend.storage.repositories.UserRepository;
@@ -20,8 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +36,28 @@ public class ProjectService {
     private final ProjectEntityFactory projectEntityFactory;
     private final ProjectMemberRepository projectMemberRepository;
     private final MessageResponseDtoFactory messageResponseDtoFactory;
+
+    @Transactional(readOnly = true)
+    public List<ProjectDto> getProjects(Long userId) {
+
+        isUserExistsById(userId);
+
+        List<ProjectEntity> projects = projectRepository.findByOwnerUserId(userId).orElse(
+                Collections.emptyList()
+        );
+
+        if (projects.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<ProjectDto> projectsList = new ArrayList<>();
+
+        for (ProjectEntity project : projects) {
+            projectsList.add(projectDtoFactory.makeProjectDto(project));
+        }
+
+        return projectsList;
+    }
 
     @Transactional
     public ProjectDto createProject(ProjectModificationRequest request, Long userId) {
@@ -115,16 +137,55 @@ public class ProjectService {
         );
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<ProjectUsersDto> showAllUsersInProject(Long userId, Long projectId) {
 
         isUserExistsById(userId);
         isProjectExistsById(projectId);
         isUserHaveRequiredRole(projectId, userId, MANAGER_ROLE);
 
-        List<ProjectUsersDto> projectUsersList = userRepository.findProjectUsersByProjectId(projectId);
+        return userRepository.findProjectUsersByProjectId(projectId);
+    }
 
-        return projectUsersList;
+    @Transactional
+    public MessageResponseDto changeUserRole(Long userId, Long projectId, String login, String newRoleName) {
+
+        isUserExistsById(userId);
+        isProjectExistsById(projectId);
+        isUserHaveRequiredRole(projectId, userId, MANAGER_ROLE);
+
+        UserEntity user = isUserExistsByLogin(login);
+        ProjectMemberEntity projectMemberEntity = projectMemberRepository.findById(user.getId()).orElseThrow(
+                () -> new AppException("Project member doesn't exists", HttpStatus.NOT_FOUND)
+        );
+
+        switch (newRoleName) {
+            case ("manager") -> projectMemberEntity.setProjectRole(ProjectRole.PROJECT_MANAGER_ROLE);
+            case ("teamlead") -> projectMemberEntity.setProjectRole(ProjectRole.PROJECT_TEAM_LEAD_ROLE);
+            case ("developer") -> projectMemberEntity.setProjectRole(ProjectRole.PROJECT_DEVELOPER_ROLE);
+            default -> throw new AppException("Unexpected value for project role", HttpStatus.BAD_REQUEST);
+        }
+
+        projectMemberRepository.save(projectMemberEntity);
+
+        return messageResponseDtoFactory.makeMessageResponseDto(
+                "User with login " + login + " changed his role to " + newRoleName
+        );
+    }
+
+    @Transactional
+    public MessageResponseDto kickUserFromProject(Long userId, Long projectId, String login) {
+
+        isUserExistsById(userId);
+        isProjectExistsById(projectId);
+        isUserHaveRequiredRole(projectId, userId, MANAGER_ROLE);
+
+        UserEntity user = isUserExistsByLogin(login);
+        projectMemberRepository.deleteById(user.getId());
+
+        return messageResponseDtoFactory.makeMessageResponseDto(
+                "User with login " + login + " was successfully kick from project"
+        );
     }
 
     private UserEntity isUserExistsById(Long userId) {
@@ -174,7 +235,7 @@ public class ProjectService {
     }
 
     private void isUserAlreadyInProject(Long checkingUserId, Long userId, Long projectId) {
-        if (checkingUserId == userId) {
+        if (Objects.equals(checkingUserId, userId)) {
             throw new AppException("User already in project", HttpStatus.BAD_REQUEST);
         }
 

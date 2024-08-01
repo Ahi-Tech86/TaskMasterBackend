@@ -3,6 +3,7 @@ package org.schizoscript.backend.controllers;
 import lombok.RequiredArgsConstructor;
 import org.schizoscript.backend.dtos.LoginDto;
 import org.schizoscript.backend.dtos.MessageResponseDto;
+import org.schizoscript.backend.dtos.project.ChangeUserRoleRequest;
 import org.schizoscript.backend.dtos.project.ProjectModificationRequest;
 import org.schizoscript.backend.dtos.project.ProjectDto;
 import org.schizoscript.backend.dtos.project.ProjectUsersDto;
@@ -18,6 +19,11 @@ import java.util.List;
 public class ProjectController {
 
     private final ProjectService projectService;
+
+    @GetMapping("/{userId}/projects")
+    public ResponseEntity<List<ProjectDto>> viewAllProjects(@PathVariable Long userId) {
+        return ResponseEntity.ok(projectService.getProjects(userId));
+    }
 
     @PostMapping("/{userId}/project/create")
     public ResponseEntity<ProjectDto> createProject(
@@ -50,7 +56,22 @@ public class ProjectController {
     public ResponseEntity<List<ProjectUsersDto>> showAllUsersInProject(
             @PathVariable Long userId, @PathVariable Long projectId
     ) {
-//        return ResponseEntity.ok(Arrays.toString(projectService.showAllUsersInProject(userId, projectId).toArray()));
         return ResponseEntity.ok(projectService.showAllUsersInProject(userId, projectId));
+    }
+
+    @PostMapping("/{userId}/project/{projectId}/manage/changeUserRole")
+    public ResponseEntity<MessageResponseDto> changeUserRole(
+            @PathVariable Long userId, @PathVariable Long projectId, @RequestBody ChangeUserRoleRequest request
+    ) {
+        return ResponseEntity.ok(
+                projectService.changeUserRole(userId, projectId, request.getLogin(), request.getNewRoleName())
+        );
+    }
+
+    @DeleteMapping("/{userId}/project/{projectId}/manage/kickUser")
+    public ResponseEntity<MessageResponseDto> kickUser(
+            @PathVariable Long userId, @PathVariable Long projectId, @RequestBody LoginDto loginDto
+    ) {
+        return ResponseEntity.ok(projectService.kickUserFromProject(userId, projectId, loginDto.getLogin()));
     }
 }
