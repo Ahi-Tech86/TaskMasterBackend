@@ -26,5 +26,6 @@ public class ProjectEntity {
 
     private Long ownerUserId;
 
-    private Instant createAt;
+    @Builder.Default
+    private Instant createAt = Instant.now();
 }

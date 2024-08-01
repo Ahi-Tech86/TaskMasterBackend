@@ -15,7 +15,7 @@ public class ProjectDtoFactory {
                 .name(projectEntity.getName())
                 .description(projectEntity.getDescription())
                 .ownerUserId(projectEntity.getOwnerUserId())
-                .createAt(projectEntity.getCreateAt())
+                .createAt(projectEntity.getCreateAt().toString())
                 .build();
     }
 }
