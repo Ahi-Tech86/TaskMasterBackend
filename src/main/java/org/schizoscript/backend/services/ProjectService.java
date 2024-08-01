@@ -1,21 +1,26 @@
 package org.schizoscript.backend.services;
 
 import lombok.RequiredArgsConstructor;
-import org.schizoscript.backend.dtos.DeleteResponseDto;
-import org.schizoscript.backend.dtos.ProjectModificationRequest;
-import org.schizoscript.backend.dtos.ProjectDto;
+import org.schizoscript.backend.dtos.MessageResponseDto;
+import org.schizoscript.backend.dtos.project.ProjectModificationRequest;
+import org.schizoscript.backend.dtos.project.ProjectDto;
+import org.schizoscript.backend.dtos.project.ProjectUsersDto;
 import org.schizoscript.backend.exceptions.AppException;
+import org.schizoscript.backend.factories.MessageResponseDtoFactory;
 import org.schizoscript.backend.factories.ProjectDtoFactory;
 import org.schizoscript.backend.factories.ProjectEntityFactory;
-import org.schizoscript.backend.factories.ProjectUsersRelationEntityFactory;
+import org.schizoscript.backend.factories.ProjectMemberFactory;
 import org.schizoscript.backend.storage.entities.ProjectEntity;
-import org.schizoscript.backend.storage.entities.ProjectUsersRelationEntity;
+import org.schizoscript.backend.storage.entities.ProjectMemberEntity;
+import org.schizoscript.backend.storage.entities.UserEntity;
 import org.schizoscript.backend.storage.repositories.ProjectRepository;
-import org.schizoscript.backend.storage.repositories.ProjectUsersRelationRepository;
+import org.schizoscript.backend.storage.repositories.ProjectMemberRepository;
+import org.schizoscript.backend.storage.repositories.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -24,23 +29,28 @@ public class ProjectService {
 
     private final String MANAGER_ROLE = "PROJECT_MANAGER_ROLE";
 
+    private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final ProjectDtoFactory projectDtoFactory;
+    private final ProjectMemberFactory projectMemberFactory;
     private final ProjectEntityFactory projectEntityFactory;
-    private final ProjectUsersRelationRepository projectUsersRelationRepository;
-    private final ProjectUsersRelationEntityFactory projectUsersRelationEntityFactory;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final MessageResponseDtoFactory messageResponseDtoFactory;
 
     @Transactional
     public ProjectDto createProject(ProjectModificationRequest request, Long userId) {
-        checkProjectNameUniqueness(request.getName());
+
+        isUserExistsById(userId);
+
+        isProjectNameUniqueness(request.getName());
 
         ProjectEntity project = projectEntityFactory.makeProjectEntity(request, userId);
         ProjectEntity savedProject = projectRepository.save(project);
 
         ProjectDto responseProjectDto = projectDtoFactory.makeProjectDto(savedProject);
-        ProjectUsersRelationEntity projectUsersRelationEntity = projectUsersRelationEntityFactory
-                .makeProjectUsersRelationEntity(responseProjectDto, userId);
-        projectUsersRelationRepository.save(projectUsersRelationEntity);
+        ProjectMemberEntity projectMemberEntity = projectMemberFactory
+                .makeProjectMemberForManagerRole(responseProjectDto, userId);
+        projectMemberRepository.save(projectMemberEntity);
 
         return responseProjectDto;
     }
@@ -48,14 +58,15 @@ public class ProjectService {
     @Transactional
     public ProjectDto editProject(ProjectModificationRequest request, Long userId, Long projectId) {
 
-        checkingUserOnRolePrivileges(projectId, userId, MANAGER_ROLE);
+        isUserExistsById(userId);
+        isUserHaveRequiredRole(projectId, userId, MANAGER_ROLE);
 
         validateProjectModificationRequest(request);
 
-        ProjectEntity project = checkProjectExistsByProjectId(projectId);
+        ProjectEntity project = isProjectExistsById(projectId);
 
         if (request.getName() != null) {
-            checkProjectNameUniqueness(request.getName());
+            isProjectNameUniqueness(request.getName());
             project.setName(request.getName());
         }
 
@@ -69,22 +80,66 @@ public class ProjectService {
     }
 
     @Transactional
-    public DeleteResponseDto deleteProject(Long userId, Long projectId) {
+    public MessageResponseDto deleteProject(Long userId, Long projectId) {
 
-        checkingUserOnRolePrivileges(projectId, userId, MANAGER_ROLE);
+        isUserExistsById(userId);
+        isUserHaveRequiredRole(projectId, userId, MANAGER_ROLE);
 
-        ProjectEntity deletedProject = checkProjectExistsByProjectId(projectId);
+        ProjectEntity deletedProject = isProjectExistsById(projectId);
 
         projectRepository.deleteById(projectId);
-        projectUsersRelationRepository.deleteAllItemsByProjectId(projectId);
+        projectMemberRepository.deleteAllItemsByProjectId(projectId);
 
-        return DeleteResponseDto
-                .builder()
-                .answer("Project with name " + deletedProject.getName() + "was successfully deleted.")
-                .build();
+        return messageResponseDtoFactory.makeMessageResponseDto(
+                "Project with name " + deletedProject.getName() + "was successfully deleted."
+        );
     }
 
-    private void checkProjectNameUniqueness(String projectName) {
+    @Transactional
+    public MessageResponseDto inviteUserInProject(Long userId, Long projectId, String login) {
+
+        isUserExistsById(userId);
+        isUserHaveRequiredRole(projectId, userId, MANAGER_ROLE);
+
+        UserEntity user = isUserExistsByLogin(login);
+
+        isUserAlreadyInProject(user.getId(), userId, projectId);
+
+        ProjectMemberEntity projectUsersRelationEntity = projectMemberFactory
+                .makeProjectMemberForDeveloperRole(projectId, user.getId());
+
+        projectMemberRepository.save(projectUsersRelationEntity);
+
+        return messageResponseDtoFactory.makeMessageResponseDto(
+                "User with login " + login + " was successfully invited in project."
+        );
+    }
+
+    @Transactional
+    public List<ProjectUsersDto> showAllUsersInProject(Long userId, Long projectId) {
+
+        isUserExistsById(userId);
+        isProjectExistsById(projectId);
+        isUserHaveRequiredRole(projectId, userId, MANAGER_ROLE);
+
+        List<ProjectUsersDto> projectUsersList = userRepository.findProjectUsersByProjectId(projectId);
+
+        return projectUsersList;
+    }
+
+    private UserEntity isUserExistsById(Long userId) {
+        return userRepository.findById(userId).orElseThrow(
+                () -> new AppException("User doesn't exists", HttpStatus.NOT_FOUND)
+        );
+    }
+
+    private UserEntity isUserExistsByLogin(String login) {
+        return userRepository.findByLogin(login).orElseThrow(
+                () -> new AppException("User doesn't exists with login " + login + ".", HttpStatus.NOT_FOUND)
+        );
+    }
+
+    private void isProjectNameUniqueness(String projectName) {
         Optional<ProjectEntity> optionalProject = projectRepository.findByName(projectName);
         if (optionalProject.isPresent()) {
             throw new AppException(
@@ -93,20 +148,20 @@ public class ProjectService {
         }
     }
 
-    private ProjectEntity checkProjectExistsByProjectId(Long projectId) {
+    private ProjectEntity isProjectExistsById(Long projectId) {
         return projectRepository.findById(projectId).orElseThrow(
                 () -> new AppException("Project not found", HttpStatus.NOT_FOUND)
         );
     }
 
-    private void checkingUserOnRolePrivileges(Long projectId, Long userId, String roleName) {
-        Optional<ProjectUsersRelationEntity> optionalProjectUsersRolesEntity = projectUsersRelationRepository
+    private void isUserHaveRequiredRole(Long projectId, Long userId, String roleName) {
+        Optional<ProjectMemberEntity> optionalProjectMemberEntity = projectMemberRepository
                 .findByProjectIdAndUserId(projectId, userId);
-        ProjectUsersRelationEntity projectUsersRelationEntity = optionalProjectUsersRolesEntity.orElseThrow(
+        ProjectMemberEntity projectMemberEntity = optionalProjectMemberEntity.orElseThrow(
                 () -> new AppException("You don't have permission to access this action", HttpStatus.FORBIDDEN)
         );
 
-        String userRole = projectUsersRelationEntity.getProjectRole().toString();
+        String userRole = projectMemberEntity.getProjectRole().toString();
         if (!userRole.equals(roleName)) {
             throw new AppException("You don't have permission to access this action", HttpStatus.FORBIDDEN);
         }
@@ -115,6 +170,19 @@ public class ProjectService {
     private void validateProjectModificationRequest(ProjectModificationRequest request) {
         if (request.getName() == null && request.getDescription() == null) {
             throw new AppException("Bad request", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private void isUserAlreadyInProject(Long checkingUserId, Long userId, Long projectId) {
+        if (checkingUserId == userId) {
+            throw new AppException("User already in project", HttpStatus.BAD_REQUEST);
+        }
+
+        Optional<ProjectMemberEntity> projectMemberEntity = projectMemberRepository
+                .findByProjectIdAndUserId(projectId, checkingUserId);
+
+        if (projectMemberEntity.isPresent()) {
+            throw new AppException("User already in project", HttpStatus.BAD_REQUEST);
         }
     }
 }

@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DeleteResponseDto {
+public class MessageResponseDto {
 
     private String answer;
 }

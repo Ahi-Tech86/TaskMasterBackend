@@ -1,6 +1,6 @@
 package org.schizoscript.backend.factories;
 
-import org.schizoscript.backend.dtos.ProjectModificationRequest;
+import org.schizoscript.backend.dtos.project.ProjectModificationRequest;
 import org.schizoscript.backend.storage.entities.ProjectEntity;
 import org.springframework.stereotype.Component;
 

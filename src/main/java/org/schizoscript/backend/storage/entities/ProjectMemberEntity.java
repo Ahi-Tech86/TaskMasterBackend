@@ -4,9 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.schizoscript.backend.storage.enums.ProjectRole;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Entity
 @Getter
 @Setter
@@ -14,7 +11,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "project_users")
-public class ProjectUsersRelationEntity {
+public class ProjectMemberEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
