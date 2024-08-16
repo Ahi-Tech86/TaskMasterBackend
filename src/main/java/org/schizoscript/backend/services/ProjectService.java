@@ -2,14 +2,12 @@ package org.schizoscript.backend.services;
 
 import lombok.RequiredArgsConstructor;
 import org.schizoscript.backend.dtos.MessageResponseDto;
+import org.schizoscript.backend.dtos.project.ProjectMemberDto;
 import org.schizoscript.backend.dtos.project.ProjectModificationRequest;
 import org.schizoscript.backend.dtos.project.ProjectDto;
 import org.schizoscript.backend.dtos.project.ProjectUsersDto;
 import org.schizoscript.backend.exceptions.AppException;
-import org.schizoscript.backend.factories.MessageResponseDtoFactory;
-import org.schizoscript.backend.factories.ProjectDtoFactory;
-import org.schizoscript.backend.factories.ProjectEntityFactory;
-import org.schizoscript.backend.factories.ProjectMemberFactory;
+import org.schizoscript.backend.factories.*;
 import org.schizoscript.backend.storage.entities.ProjectEntity;
 import org.schizoscript.backend.storage.entities.ProjectMemberEntity;
 import org.schizoscript.backend.storage.entities.UserEntity;
@@ -34,6 +32,7 @@ public class ProjectService {
     private final ProjectDtoFactory projectDtoFactory;
     private final ProjectMemberFactory projectMemberFactory;
     private final ProjectEntityFactory projectEntityFactory;
+    private final ProjectMemberDtoFactory projectMemberDtoFactory;
     private final ProjectMemberRepository projectMemberRepository;
     private final MessageResponseDtoFactory messageResponseDtoFactory;
 
@@ -148,15 +147,15 @@ public class ProjectService {
     }
 
     @Transactional
-    public MessageResponseDto changeUserRole(Long userId, Long projectId, String login, String newRoleName) {
+    public ProjectMemberDto changeUserRole(Long userId, Long projectId, String login, String newRoleName) {
 
         isUserExistsById(userId);
         isProjectExistsById(projectId);
         isUserHaveRequiredRole(projectId, userId, MANAGER_ROLE);
 
         UserEntity user = isUserExistsByLogin(login);
-        ProjectMemberEntity projectMemberEntity = projectMemberRepository.findById(user.getId()).orElseThrow(
-                () -> new AppException("Project member doesn't exists", HttpStatus.NOT_FOUND)
+        ProjectMemberEntity projectMemberEntity = projectMemberRepository.findByProjectIdAndUserId(projectId, user.getId())
+                .orElseThrow(() -> new AppException("Project member doesn't exists", HttpStatus.NOT_FOUND)
         );
 
         switch (newRoleName) {
@@ -166,11 +165,9 @@ public class ProjectService {
             default -> throw new AppException("Unexpected value for project role", HttpStatus.BAD_REQUEST);
         }
 
-        projectMemberRepository.save(projectMemberEntity);
+        ProjectMemberEntity savedProjectMember = projectMemberRepository.save(projectMemberEntity);
 
-        return messageResponseDtoFactory.makeMessageResponseDto(
-                "User with login " + login + " changed his role to " + newRoleName
-        );
+        return projectMemberDtoFactory.makeProjectMemberDto(savedProjectMember);
     }
 
     @Transactional

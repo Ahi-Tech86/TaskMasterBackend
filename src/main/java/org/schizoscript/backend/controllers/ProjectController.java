@@ -3,10 +3,7 @@ package org.schizoscript.backend.controllers;
 import lombok.RequiredArgsConstructor;
 import org.schizoscript.backend.dtos.LoginDto;
 import org.schizoscript.backend.dtos.MessageResponseDto;
-import org.schizoscript.backend.dtos.project.ChangeUserRoleRequest;
-import org.schizoscript.backend.dtos.project.ProjectModificationRequest;
-import org.schizoscript.backend.dtos.project.ProjectDto;
-import org.schizoscript.backend.dtos.project.ProjectUsersDto;
+import org.schizoscript.backend.dtos.project.*;
 import org.schizoscript.backend.services.ProjectService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -60,7 +57,7 @@ public class ProjectController {
     }
 
     @PostMapping("/{userId}/project/{projectId}/manage/changeUserRole")
-    public ResponseEntity<MessageResponseDto> changeUserRole(
+    public ResponseEntity<ProjectMemberDto> changeUserRole(
             @PathVariable Long userId, @PathVariable Long projectId, @RequestBody ChangeUserRoleRequest request
     ) {
         return ResponseEntity.ok(
