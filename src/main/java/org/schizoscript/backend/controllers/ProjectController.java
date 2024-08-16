@@ -71,4 +71,11 @@ public class ProjectController {
     ) {
         return ResponseEntity.ok(projectService.kickUserFromProject(userId, projectId, loginDto.getLogin()));
     }
+
+    @DeleteMapping("/{userId}/project/{projectId}/leave")
+    public ResponseEntity<MessageResponseDto> leaveProject(
+            @PathVariable Long userId, @PathVariable Long projectId
+    ) {
+        return ResponseEntity.ok(projectService.quitFromProject(userId, projectId));
+    }
 }

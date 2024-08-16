@@ -11,6 +11,8 @@ import java.util.Optional;
 public interface ProjectMemberRepository extends JpaRepository<ProjectMemberEntity, Long> {
     Optional<ProjectMemberEntity> findByProjectIdAndUserId(Long projectId, Long userId);
 
+    void deleteByProjectIdAndUserId(Long projectId, Long userId);
+
     @Modifying
     @Transactional
     @Query(value = "DELETE FROM project_users WHERE project_id = :projectId", nativeQuery = true)

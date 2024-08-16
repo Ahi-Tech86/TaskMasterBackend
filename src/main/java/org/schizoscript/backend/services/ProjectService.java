@@ -185,6 +185,17 @@ public class ProjectService {
         );
     }
 
+    @Transactional
+    public MessageResponseDto quitFromProject(Long userId, Long projectId) {
+
+        isUserExistsById(userId);
+        isProjectExistsById(projectId);
+
+        projectMemberRepository.deleteByProjectIdAndUserId(projectId, userId);
+
+        return messageResponseDtoFactory.makeMessageResponseDto("User quited from project");
+    }
+
     private UserEntity isUserExistsById(Long userId) {
         return userRepository.findById(userId).orElseThrow(
                 () -> new AppException("User doesn't exists", HttpStatus.NOT_FOUND)

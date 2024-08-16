@@ -5,10 +5,9 @@ import org.schizoscript.backend.dtos.task.CreateTaskRequestDto;
 import org.schizoscript.backend.dtos.task.TaskDto;
 import org.schizoscript.backend.services.TaskService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,5 +20,17 @@ public class TaskController {
             @PathVariable Long userId, @PathVariable Long projectId, @RequestBody CreateTaskRequestDto request
     ) {
         return ResponseEntity.ok(taskService.createTask(userId, projectId, request));
+    }
+
+    @GetMapping("/{userId}/project/{projectId}/task/{taskId}")
+    public ResponseEntity<TaskDto> getTaskById(
+            @PathVariable Long userId, @PathVariable Long projectId, @PathVariable Long taskId
+    ) {
+        return ResponseEntity.ok(taskService.showTaskById(userId, projectId, taskId));
+    }
+
+    @GetMapping("/{userId}/project/{projectId}/tasks")
+    public ResponseEntity<List<TaskDto>> getAllTasks(@PathVariable Long userId, @PathVariable Long projectId) {
+        return ResponseEntity.ok(taskService.getAllTasks(userId, projectId));
     }
 }
